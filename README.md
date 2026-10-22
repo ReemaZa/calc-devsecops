@@ -25,7 +25,7 @@ Le workflow [`ci.yml`](.github/workflows/ci.yml) s'exécute à chaque push sur `
 ## 🚀 Démarrage rapide
 
 ```bash
-git clone https://github.com/TON_USER/calc-devsecops.git
+git clone https://github.com/ReemaZa/calc-devsecops.git
 cd calc-devsecops
 pip install -r requirements.txt -r requirements-dev.txt
 pytest
