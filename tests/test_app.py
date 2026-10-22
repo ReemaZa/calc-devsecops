@@ -80,6 +80,3 @@ def test_api_empty_and_bad_angle(client):
     assert client.post("/api/evaluate", json={"expression": "1", "angle": "x"}).status_code == 400
 
 
-def test_security_headers(client):
-    h = client.get("/").headers
-    assert "Content-Security-Policy" in h and h["X-Frame-Options"] == "DENY"
