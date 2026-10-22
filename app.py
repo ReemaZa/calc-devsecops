@@ -1,10 +1,23 @@
-import math
-import subprocess  # noqa
-
 from flask import Flask, jsonify, render_template, request
 
+from calculator import CalcError, safe_eval
+
 app = Flask(__name__)
-SECRET_KEY = "admin123"  # secret en dur (mauvaise pratique)
+
+
+@app.after_request
+def set_security_headers(resp):
+    """En-têtes de sécurité HTTP (vérifiés par le scan DAST)."""
+    resp.headers["Content-Security-Policy"] = (
+        "default-src 'self'; frame-ancestors 'none'; "
+        "form-action 'self'; base-uri 'self'"
+    )
+    resp.headers["X-Frame-Options"] = "DENY"
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["Referrer-Policy"] = "no-referrer"
+    resp.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
 
 
 @app.get("/")
@@ -17,26 +30,20 @@ def health():
     return jsonify(status="ok")
 
 
-# VULNERABILITE 1 : eval() sur une entrée utilisateur => exécution de code arbitraire
 @app.post("/api/evaluate")
 def evaluate():
     data = request.get_json(silent=True) or {}
-    expression = str(data.get("expression", "")).replace("^", "**")
+    expression = data.get("expression")
+    angle = data.get("angle", "rad")
+    if not isinstance(expression, str) or not expression.strip():
+        return jsonify(error="Expression vide"), 400
+    if angle not in ("deg", "rad"):
+        return jsonify(error="Mode d'angle invalide"), 400
     try:
-        result = eval(expression, {"sqrt": math.sqrt, "pi": math.pi})
-        return jsonify(result=result)
-    except Exception as exc:
+        return jsonify(result=safe_eval(expression, angle))
+    except CalcError as exc:
         return jsonify(error=str(exc)), 400
 
 
-# VULNERABILITE 2 : route non authentifiée + injection de commande
-@app.get("/admin/run")
-def run_cmd():
-    cmd = request.args.get("cmd", "echo hello")
-    return subprocess.check_output(cmd, shell=True)
-
-
-# VULNERABILITE 3 : pas d'en-têtes de sécurité (CSP, X-Frame-Options...) => alertes ZAP
-
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)  # debug en prod = dangereux
+    app.run(host="127.0.0.1", port=5000)
