@@ -5,8 +5,8 @@ from calculator import CalcError, safe_eval
 app = Flask(__name__)
 
 
-@app.after_request
-def set_security_headers(resp):
+#@app.after_request
+'''def set_security_headers(resp):
     """En-têtes de sécurité HTTP (vérifiés par le scan DAST)."""
     resp.headers["Content-Security-Policy"] = (
         "default-src 'self'; frame-ancestors 'none'; "
@@ -18,7 +18,7 @@ def set_security_headers(resp):
     resp.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
     resp.headers["Cache-Control"] = "no-store"
     return resp
-
+'''
 
 @app.get("/")
 def index():
