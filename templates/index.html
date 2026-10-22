@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calculatrice scientifique</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="calc">
+    <h1>Calculatrice scientifique</h1>
+    <input id="expr" type="text" maxlength="200" autocomplete="off" spellcheck="false"
+           placeholder="ex : 2*(3+4)^2 - sqrt(16)" aria-label="Expression">
+    <p id="out" role="status">&nbsp;</p>
+    <div class="grid">
+      <button data-ins="sin(">sin</button><button data-ins="cos(">cos</button>
+      <button data-ins="tan(">tan</button><button data-ins="log(">log</button>
+      <button data-ins="ln(">ln</button>
+
+      <button data-ins="sqrt(">√</button><button data-ins="pi">π</button>
+      <button data-ins="e">e</button><button data-ins="^">xʸ</button>
+      <button data-ins="fact(">n!</button>
+
+      <button data-ins="(">(</button><button data-ins=")">)</button>
+      <button data-ins="%">%</button><button data-act="back">⌫</button>
+      <button data-act="clear" class="warn">C</button>
+
+      <button data-ins="7" class="num">7</button><button data-ins="8" class="num">8</button>
+      <button data-ins="9" class="num">9</button><button data-ins="/" class="op">÷</button>
+      <button data-act="ans">Ans</button>
+
+      <button data-ins="4" class="num">4</button><button data-ins="5" class="num">5</button>
+      <button data-ins="6" class="num">6</button><button data-ins="*" class="op">×</button>
+      <button data-ins="abs(">|x|</button>
+
+      <button data-ins="1" class="num">1</button><button data-ins="2" class="num">2</button>
+      <button data-ins="3" class="num">3</button><button data-ins="-" class="op">−</button>
+      <button data-ins="exp(">eˣ</button>
+
+      <button data-ins="0" class="num">0</button><button data-ins="." class="num">.</button>
+      <button data-act="eval" class="eq">=</button><button data-ins="+" class="op">+</button>
+      <button data-act="angle" id="angle">RAD</button>
+    </div>
+    <section>
+      <h2>Historique</h2>
+      <ul id="history"></ul>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

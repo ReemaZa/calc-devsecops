@@ -1,0 +1,89 @@
+name: CI-DevSecOps
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  # 1) Compilation + tests unitaires
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Installer les dépendances
+        run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Tests unitaires
+        run: pytest -v
+      - name: Build de l'image Docker
+        run: docker build -t calc-app:ci .
+
+  # 2) SAST : analyse statique du code avec Bandit
+  sast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install bandit
+      # -ll = sévérité MEDIUM et plus ; -ii = confiance MEDIUM et plus
+      # Bandit retourne un code != 0 s'il trouve quelque chose => pipeline en échec
+      - name: Scan SAST (Bandit)
+        run: bandit -r app.py calculator.py -ll -ii
+
+  # 3) SCA : analyse des dépendances avec Trivy
+  sca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan SCA (Trivy) - bloque si HIGH ou CRITICAL
+        run: |
+          docker run --rm -v "$PWD:/src" aquasec/trivy:0.58.0 fs \
+            --scanners vuln --severity HIGH,CRITICAL \
+            --exit-code 1 /src
+
+  # 4) DAST : déploiement éphémère + scan OWASP ZAP
+  dast:
+    runs-on: ubuntu-latest
+    needs: [build-test, sast, sca]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Déployer l'app (environnement éphémère)
+        run: |
+          docker build -t calc-app:dast .
+          docker run -d --name calc -p 5000:5000 calc-app:dast
+          for i in $(seq 1 20); do
+            curl -sf http://localhost:5000/health && break
+            sleep 2
+          done
+      - name: Scan DAST (OWASP ZAP baseline)
+        run: |
+          mkdir zap-out && chmod 777 zap-out
+          docker run --rm --network host -v "$PWD/zap-out:/zap/wrk:rw" \
+            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+            -t http://localhost:5000 -J zap-report.json -r zap-report.html -I
+      - name: Gate DAST (échoue si risque >= Medium)
+        run: python scripts/check_zap.py zap-out/zap-report.json
+        env:
+          MIN_RISK: "2"
+      - name: Publier les rapports ZAP
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: zap-out/
+      - name: Arrêter l'environnement éphémère
+        if: always()
+        run: docker rm -f calc || true

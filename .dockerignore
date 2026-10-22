@@ -1,0 +1,9 @@
+.git
+.github
+tests
+demo
+scripts
+__pycache__
+*.pyc
+.venv
+zap-out
